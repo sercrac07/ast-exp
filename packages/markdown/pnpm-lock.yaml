@@ -1,0 +1,22 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@lexer-exp/markdown':
+        specifier: ^0.0.1
+        version: 0.0.1
+
+packages:
+
+  '@lexer-exp/markdown@0.0.1':
+    resolution: {integrity: sha512-knBEcUNxeWTuQu775Z5Lv/Z+a+f4cyLCNadrkBJ5G0DC5rtZvedG8WCP+xQy4DIuIL0y5OtETz6BxmOfikUTJg==}
+
+snapshots:
+
+  '@lexer-exp/markdown@0.0.1': {}

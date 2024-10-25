@@ -20,5 +20,8 @@
     "markdown"
   ],
   "author": "sercrac07",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@lexer-exp/markdown": "^0.0.1"
+  }
 }
