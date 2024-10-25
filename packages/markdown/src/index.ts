@@ -1,15 +1,23 @@
-import { Token, Inline as TokenInline, InlineType as TokenInlineType, TokenType } from '@lexer-exp/markdown'
+import lexerize, { Token, Inline as TokenInline, InlineType as TokenInlineType, TokenType } from '@lexer-exp/markdown'
 import { Inline, InlineType, Node, NodeType } from './types'
 
 export { InlineType, NodeType }
 export type { Inline, Node }
 
-export default function parser(tokens: Token[]): Node {
+/**
+ * Parses a Markdown string into an AST.
+ */
+export default function parser(source: string): Node {
+  const tokens = lexerize(source)
+
   const program: Node = {
     type: NodeType.Program,
     children: [],
   }
 
+  /**
+   * Converts an inline token to its corresponding Inline node representation.
+   */
   function handleInline(inline: TokenInline): Inline {
     switch (inline.type) {
       case TokenInlineType.Text: {
@@ -53,6 +61,9 @@ export default function parser(tokens: Token[]): Node {
     }
   }
 
+  /**
+   * Converts a block-level token to its corresponding Node representation.
+   */
   function handleToken(token: Token): Node {
     switch (token.type) {
       case TokenType.Paragraph: {
@@ -108,9 +119,9 @@ export default function parser(tokens: Token[]): Node {
     }
   }
 
+  // Process tokens and build the AST.
   while (tokens.length > 0) {
     const token = tokens.shift()!
-
     program.children.push(handleToken(token))
   }
 
