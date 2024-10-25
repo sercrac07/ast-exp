@@ -1,0 +1,32 @@
+{
+  "name": "ast-exp",
+  "description": "Parse your code",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sercrac07/parse-exp.git"
+  },
+  "scripts": {
+    "build": "node ./build.mjs",
+    "test": "vitest",
+    "test:script": "ts-node ./test/script.ts"
+  },
+  "keywords": [
+    "parser",
+    "ast",
+    "ast-exp"
+  ],
+  "author": "sercrac07",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^22.7.9",
+    "eslint": "^9.13.0",
+    "glob": "^11.0.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.11.0",
+    "vitest": "^2.1.3"
+  }
+}
