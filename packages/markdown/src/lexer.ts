@@ -190,7 +190,7 @@ export default function lexerize(source: string): Token[] {
       }
       tokens.push({
         type: TokenType.BlockQuote,
-        value: blockQuote.flatMap(lexerize),
+        value: lexerize(blockQuote.join('\n')),
       })
     }
     // Handle lists
