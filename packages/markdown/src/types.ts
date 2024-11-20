@@ -1,261 +1,141 @@
-/** Token types for different Markdown elements. */
 export enum TokenType {
   Paragraph = 'PARAGRAPH',
   Heading = 'HEADING',
   CodeBlock = 'CODE_BLOCK',
   BlockQuote = 'BLOCK_QUOTE',
-  UnorderedList = 'UNORDERED_LIST',
-  OrderedList = 'ORDERED_LIST',
-  ListItem = 'LIST_ITEM',
-  Table = 'TABLE',
+  List = 'LIST',
+
+  NewLine = 'NEW_LINE',
+  EndOfFile = 'END_OF_FILE',
 }
 
-/** Inline types for in-line Markdown elements. */
-export enum InlineTokenType {
-  Text = 'TEXT',
-  Code = 'CODE',
-  Strong = 'STRONG',
-  Emphasis = 'EMPHASIS',
-  Link = 'LINK',
-  Image = 'IMAGE',
-}
+export type Token = ParagraphToken | HeadingToken | CodeBlockToken | BlockQuoteToken | ListToken | NewLineToken | EndOfFileToken
 
-/** Token represents the different elements that can be parsed. */
-export type Token = ParagraphToken | HeadingToken | CodeBlockToken | BlockQuoteToken | ListToken | ListItemToken | TableToken
-/** Inline represents the different inline elements that can be parsed. */
-export type InlineToken = TextToken | CodeToken | StrongToken | EmphasisToken | LinkToken | ImageToken
-
-// Represents a paragraph token containing inline elements.
-type ParagraphToken = {
+export type ParagraphToken = {
   type: TokenType.Paragraph
-  value: InlineToken[]
+  value: string
 }
 
-// Represents a heading token with a specific level (H1-H6).
-type HeadingToken = {
+export type HeadingToken = {
   type: TokenType.Heading
   level: 1 | 2 | 3 | 4 | 5 | 6
-  value: InlineToken[]
+  value: string
 }
 
-// Represents a code block token with optional language and metadata.
-type CodeBlockToken = {
+export type CodeBlockToken = {
   type: TokenType.CodeBlock
-  language?: string
-  meta?: string
   value: string
 }
 
-// Represents a block quote token containing nested tokens.
-type BlockQuoteToken = {
+export type BlockQuoteToken = {
   type: TokenType.BlockQuote
-  value: Token[]
-}
-
-// Represents a list token (ordered or unordered) containing list items.
-type ListToken = {
-  type: TokenType.UnorderedList | TokenType.OrderedList
-  value: ListItemToken[]
-}
-
-// Represents an individual list item with an optional checkbox (for task lists).
-export type ListItemToken = {
-  type: TokenType.ListItem
-  checked: null | string
-  value: Token[]
-}
-
-// Represents a table token with headers and rows.
-type TableToken = {
-  type: TokenType.Table
-  header: InlineToken[][]
-  rows: InlineToken[][][]
-  alignment: ('left' | 'center' | 'right' | undefined)[]
-}
-
-// Inline element for plain text.
-type TextToken = {
-  type: InlineTokenType.Text
   value: string
 }
 
-// Inline element for inline code.
-type CodeToken = {
-  type: InlineTokenType.Code
+export type ListToken = {
+  type: TokenType.List
   value: string
+  ordered: boolean
 }
 
-// Inline element for bold text (strong emphasis).
-type StrongToken = {
-  type: InlineTokenType.Strong
-  value: InlineToken[]
+export type NewLineToken = {
+  type: TokenType.NewLine
 }
 
-// Inline element for italic text (emphasis).
-type EmphasisToken = {
-  type: InlineTokenType.Emphasis
-  value: InlineToken[]
+export type EndOfFileToken = {
+  type: TokenType.EndOfFile
 }
 
-// Inline element for hyperlinks.
-type LinkToken = {
-  type: InlineTokenType.Link
-  url: string
-  value: InlineToken[]
-}
-
-// Inline element for images.
-type ImageToken = {
-  type: InlineTokenType.Image
-  url: string
-  value: string
-}
-
-/** Defines the different node types for the AST. */
 export enum NodeType {
   Program = 'PROGRAM',
+
   Paragraph = 'PARAGRAPH',
   Heading = 'HEADING',
   CodeBlock = 'CODE_BLOCK',
   BlockQuote = 'BLOCK_QUOTE',
-  List = 'LIST',
+  OrderedList = 'ORDERED_LIST',
+  UnorderedList = 'UNORDERED_LIST',
   ListItem = 'LIST_ITEM',
-  Table = 'TABLE',
 }
 
-/** Defines the different inline types for nodes like text, strong, and links. */
-export enum InlineNodeType {
-  Text = 'TEXT',
-  Code = 'CODE',
-  Strong = 'STRONG',
-  Emphasis = 'EMPHASIS',
-  Link = 'LINK',
-  Image = 'IMAGE',
-}
+export type Node = ProgramNode | ParagraphNode | HeadingNode | CodeBlockNode | BlockQuoteNode | OrderedListNode | UnorderedListNode | ListItemNode
 
-/** Main Node type definition for the AST. */
-export type Node = ProgramNode | ParagraphNode | HeadingNode | CodeBlockNode | BlockQuoteNode | ListNode | ListItemNode | TableNode
-
-/** Main Inline type definition for inline content within block nodes. */
-export type InlineNode = TextNode | CodeNode | StrongNode | EmphasisNode | LinkNode | ImageNode
-
-/**
- * Represents the root node of the AST, containing all parsed nodes.
- */
-type ProgramNode = {
+export type ProgramNode = {
   type: NodeType.Program
   children: Node[]
 }
 
-/**
- * Represents a paragraph node containing inline elements.
- */
-type ParagraphNode = {
+export type ParagraphNode = {
   type: NodeType.Paragraph
   children: InlineNode[]
 }
 
-/**
- * Represents a heading node, where `level` defines the heading level (h1-h6).
- */
-type HeadingNode = {
+export type HeadingNode = {
   type: NodeType.Heading
   level: 1 | 2 | 3 | 4 | 5 | 6
   children: InlineNode[]
 }
 
-/**
- * Represents a code block node.
- */
-type CodeBlockNode = {
+export type CodeBlockNode = {
   type: NodeType.CodeBlock
-  value: string
   language?: string
   meta?: string
+  value: string
 }
 
-/**
- * Represents a blockquote node.
- */
-type BlockQuoteNode = {
+export type BlockQuoteNode = {
   type: NodeType.BlockQuote
   children: Node[]
 }
 
-/**
- * Represents a list node, where `ordered` indicates if it's an ordered or unordered list.
- */
-type ListNode = {
-  type: NodeType.List
-  ordered: boolean
-  children: Node[]
+export type OrderedListNode = {
+  type: NodeType.OrderedList
+  children: ListItemNode[]
 }
 
-/**
- * Represents a list item node, where `checked` is used for task lists.
- */
-type ListItemNode = {
+export type UnorderedListNode = {
+  type: NodeType.UnorderedList
+  children: ListItemNode[]
+}
+
+export type ListItemNode = {
   type: NodeType.ListItem
-  checked: null | string
   children: Node[]
 }
 
-/**
- * Represents a table node, including its header and rows.
- */
-type TableNode = {
-  type: NodeType.Table
-  header: InlineNode[][]
-  rows: InlineNode[][][]
-  alignment: ('left' | 'center' | 'right' | undefined)[]
+export enum InlineNodeType {
+  Text = 'TEXT',
+  Code = 'CODE',
+  Strong = 'STRONG',
+  Emphasis = 'EMPHASIS',
+
+  Escape = 'ESCAPE',
 }
 
-/**
- * Represents inline text content.
- */
-type TextNode = {
+export type InlineNode = TextNode | CodeNode | StrongNode | EmphasisNode | EscapeNode
+
+export type TextNode = {
   type: InlineNodeType.Text
   value: string
 }
 
-/**
- * Represents inline code content.
- */
-type CodeNode = {
+export type CodeNode = {
   type: InlineNodeType.Code
   value: string
 }
 
-/**
- * Represents bold (strong) inline text.
- */
-type StrongNode = {
+export type StrongNode = {
   type: InlineNodeType.Strong
   children: InlineNode[]
 }
 
-/**
- * Represents italic (emphasis) inline text.
- */
-type EmphasisNode = {
+export type EmphasisNode = {
   type: InlineNodeType.Emphasis
   children: InlineNode[]
 }
 
-/**
- * Represents a hyperlink inline element.
- */
-type LinkNode = {
-  type: InlineNodeType.Link
-  children: InlineNode[]
-  url: string
-}
-
-/**
- * Represents an inline image element.
- */
-type ImageNode = {
-  type: InlineNodeType.Image
-  alt: string
-  url: string
+export type EscapeNode = {
+  type: InlineNodeType.Escape
+  value: string
+  escaped: string
 }
