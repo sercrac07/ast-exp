@@ -1,6 +1,6 @@
 import { inline } from './inline'
 import { lexer } from './lexer'
-import { BlockQuoteToken, CodeBlockToken, HeadingToken, ListItemNode, ListToken, Node, NodeType, ParagraphToken, ProgramNode, Token, TokenType } from './types'
+import { BlockQuoteToken, CodeBlockToken, HeadingToken, ListToken, Node, NodeType, OrderedListNode, ParagraphToken, ProgramNode, Token, TokenType, UnorderedListNode } from './types'
 
 class Parser {
   private tokens: Token[]
@@ -68,22 +68,57 @@ class Parser {
     return { type: NodeType.BlockQuote, children: parser(blockQuotes.join('\n')).children }
   }
   private parseList(): Node {
-    const listItems: string[] = []
     const isOrdered = (this.current() as ListToken).ordered
+    let node: OrderedListNode | UnorderedListNode
+    if (isOrdered) node = { type: NodeType.OrderedList, children: [] }
+    else node = { type: NodeType.UnorderedList, children: [] }
 
-    while (this.current().type !== TokenType.EndOfFile) {
-      if (this.current().type === TokenType.List) listItems.push((this.eat() as ListToken).value.replace(/^\s*-\s|\s*\d+\.\s/, ''))
-      else if (!('value' in this.current())) {
-        this.eat()
-        listItems.push('')
-      } else if ((this.current() as any).value.startsWith('  ')) listItems.push((this.eat() as any).value.replace(/^\s{2}/, ''))
-      else break
+    const buffer: string[] = []
+
+    function flush() {
+      if (buffer.length > 0) {
+        node.children.push({ type: NodeType.ListItem, children: parser(buffer.join('\n')).children })
+        buffer.length = 0
+      }
     }
 
-    const children: ListItemNode[] = parser(listItems.join('\n')).children.map(child => ({ type: NodeType.ListItem, children: [child] }))
+    while (this.current().type !== TokenType.EndOfFile) {
+      if ('value' in this.current()) {
+        if ((this.current() as ParagraphToken).value.startsWith('  ')) {
+          if (this.current().type === TokenType.List) {
+            const newBuffer: string[] = []
+            while (this.current().type !== TokenType.EndOfFile) {
+              if (this.current().type === TokenType.List) {
+                if ((this.current() as ListToken).value.startsWith('  ')) {
+                  newBuffer.push((this.eat() as ListToken).value.replace(/^\s{2}/, ''))
+                } else if ('value' in this.current()) {
+                  if ((this.current() as ParagraphToken).value.startsWith('    ')) {
+                    newBuffer.push((this.eat() as ParagraphToken).value.replace(/^\s{2}/, ''))
+                  } else break
+                } else newBuffer.push('')
+              } else break
+            }
+            buffer.push(newBuffer.join('\n'))
+          } else {
+            buffer.push((this.eat() as ParagraphToken).value.replace(/^\s{2}/, ''))
+          }
+        } else {
+          if (this.current().type === TokenType.List) {
+            if ((this.current() as ListToken).ordered !== isOrdered) break
+            flush()
+            const token = this.eat() as ListToken
+            buffer.push(token.value.replace(/^-\s|\d+\.\s/, ''))
+          } else break
+        }
+      } else if (this.current().type === TokenType.NewLine) {
+        this.eat()
+        buffer.push('')
+      } else break
+    }
 
-    if (isOrdered) return { type: NodeType.OrderedList, children }
-    return { type: NodeType.UnorderedList, children }
+    flush()
+
+    return node
   }
 }
 
