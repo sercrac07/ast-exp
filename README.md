@@ -15,9 +15,9 @@ npm install @ast-exp/[language]
 ## Usage
 
 ```ts
-import parser from '@ast-exp/[language]'
+import [language] from '@ast-exp/[language]'
 
-const ast = parser('Your language code')
+const ast = [language].parser('Your language code')
 ```
 
 ## Contributing
