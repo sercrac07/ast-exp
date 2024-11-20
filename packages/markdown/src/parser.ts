@@ -107,7 +107,7 @@ class Parser {
             if ((this.current() as ListToken).ordered !== isOrdered) break
             flush()
             const token = this.eat() as ListToken
-            buffer.push(token.value.replace(/^-\s|\d+\.\s/, ''))
+            buffer.push(token.value.replace(/^\s*-\s|\s*\d+\.\s/, ''))
           } else break
         }
       } else if (this.current().type === TokenType.NewLine) {
