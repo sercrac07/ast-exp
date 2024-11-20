@@ -39,7 +39,7 @@ Contributions are welcome! If you find any issues or have suggestions for improv
 7. Push your branch to your fork: `git push origin feature-name`.
 8. Open a pull request to the `main` branch of the original repository.
 
-Thank you for contributing to **colipar**!
+Thank you for contributing to **ast-exp**!
 
 ## License
 
