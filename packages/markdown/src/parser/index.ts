@@ -28,7 +28,7 @@ class Parser {
       const token = this.current()
 
       if (token.type === TokenType.Paragraph) program.children.push(this.parseParagraph())
-      else if (token.type === TokenType.LineBreak) this.parseLineBreak()
+      else if (token.type === TokenType.LineBreak) program.children.push(this.parseLineBreak())
       else if (token.type === TokenType.Heading) program.children.push(this.parseHeading())
       else if (token.type === TokenType.CodeBlock) program.children.push(this.parseCodeBlock())
       else if (token.type === TokenType.BlockQuote) program.children.push(this.parseBlockQuote())
@@ -58,8 +58,9 @@ class Parser {
 
     return { type: NodeType.Heading, level: token.level, children: inline(value) }
   }
-  private parseLineBreak(): void {
+  private parseLineBreak(): Node {
     this.eat()
+    return { type: NodeType.LineBreak }
   }
   private parseCodeBlock(): Node {
     const token = this.eat() as CodeBlockToken

@@ -5,7 +5,7 @@ class Inline {
   private nodes: InlineNode[] = []
   private text = ''
 
-  private ESCAPES = ['\\', '`', '*', '_', '[', ']', '(', ')', '!', '~', '=', '^', '#', '>', '-', '.', '|']
+  private ESCAPES = ['\\', '`', '*', '_', '[', ']', '(', ')', '!', '~', '=', '^', '#', '>', '-', '.', '|', ':']
 
   constructor(line: string) {
     this.chars = line.split('')

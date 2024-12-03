@@ -11,9 +11,10 @@ export enum NodeType {
   ListItem = 'LIST_ITEM',
   HorizontalRule = 'HORIZONTAL_RULE',
   Table = 'TABLE',
+  LineBreak = 'LINE_BREAK',
 }
 
-export type Node = ProgramNode | ParagraphNode | HeadingNode | CodeBlockNode | BlockQuoteNode | OrderedListNode | UnorderedListNode | ListItemNode | HorizontalRuleNode | TableNode
+export type Node = ProgramNode | ParagraphNode | HeadingNode | CodeBlockNode | BlockQuoteNode | OrderedListNode | UnorderedListNode | ListItemNode | HorizontalRuleNode | TableNode | LineBreakNode
 
 export interface ProgramNode {
   type: NodeType.Program
@@ -71,4 +72,8 @@ export interface TableNode {
   header: InlineNode[][]
   rows: InlineNode[][][]
   align: ('left' | 'center' | 'right')[]
+}
+
+export interface LineBreakNode {
+  type: NodeType.LineBreak
 }
