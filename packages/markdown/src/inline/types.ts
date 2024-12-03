@@ -4,7 +4,7 @@ export enum InlineNodeType {
   Code = 'CODE',
   Strong = 'STRONG',
   Italic = 'ITALIC',
-  Footnote = 'FOOTNOTE',
+  FootnoteReference = 'FOOTNOTE_REFERENCE',
   Link = 'LINK',
   Image = 'IMAGE',
   Delete = 'DELETE',
@@ -14,7 +14,20 @@ export enum InlineNodeType {
   Color = 'COLOR',
 }
 
-export type InlineNode = TextNode | EscapeNode | CodeNode | StrongNode | ItalicNode | FootnoteNode | LinkNode | ImageNode | DeleteNode | HighlightNode | SuperscriptNode | SubscriptNode | ColorNode
+export type InlineNode =
+  | TextNode
+  | EscapeNode
+  | CodeNode
+  | StrongNode
+  | ItalicNode
+  | FootnoteReferenceNode
+  | LinkNode
+  | ImageNode
+  | DeleteNode
+  | HighlightNode
+  | SuperscriptNode
+  | SubscriptNode
+  | ColorNode
 
 export interface TextNode {
   type: InlineNodeType.Text
@@ -41,8 +54,8 @@ export interface ItalicNode {
   children: InlineNode[]
 }
 
-export interface FootnoteNode {
-  type: InlineNodeType.Footnote
+export interface FootnoteReferenceNode {
+  type: InlineNodeType.FootnoteReference
   value: string
 }
 

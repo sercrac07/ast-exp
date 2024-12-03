@@ -107,7 +107,7 @@ class Inline {
     else {
       this.flushText()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Footnote, value })
+      this.nodes.push({ type: InlineNodeType.FootnoteReference, value })
     }
   }
   private parseLink(): void {
