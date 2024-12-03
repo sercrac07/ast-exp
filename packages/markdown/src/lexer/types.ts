@@ -5,15 +5,16 @@ export enum TokenType {
   BlockQuote = 'BLOCK_QUOTE',
   List = 'LIST',
   Table = 'TABLE',
-
   HorizontalRule = 'HORIZONTAL_RULE',
+  Footnote = 'FOOTNOTE',
+
   LineBreak = 'LINE_BREAK',
   EndOfFile = 'END_OF_FILE',
 }
 
 export type Token = TokenWithValue | TokenWithoutValue
-export type TokenWithValue = ParagraphToken | HeadingToken | CodeBlockToken | BlockQuoteToken | ListToken | TableToken
-export type TokenWithoutValue = HorizontalRuleToken | LineBreakToken | EndOfFileToken
+export type TokenWithValue = ParagraphToken | HeadingToken | CodeBlockToken | BlockQuoteToken | ListToken | TableToken | HorizontalRuleToken | FootnoteToken
+export type TokenWithoutValue = LineBreakToken | EndOfFileToken
 
 export interface ParagraphToken {
   type: TokenType.Paragraph
@@ -49,6 +50,12 @@ export interface TableToken {
 
 export interface HorizontalRuleToken {
   type: TokenType.HorizontalRule
+  value: string
+}
+
+export interface FootnoteToken {
+  type: TokenType.Footnote
+  value: string
 }
 
 export interface LineBreakToken {

@@ -40,6 +40,7 @@ class Lexer {
     else if (/^-\s/.test(cleaned) || /^\d+\.\s/.test(cleaned)) return this.lexerizeList()
     else if (/^-{3,}\s*$/.test(cleaned)) return this.tokenizeHorizontalRule()
     else if (/^\|(.+\|)+\s*$/.test(cleaned)) return this.tokenizeTable()
+    else if (/^\[\^.+\]:/.test(cleaned)) return this.tokenizeFootnote()
     else return this.tokenizeParagraph()
   }
   private tokenizeLineBreak(): Token {
@@ -69,12 +70,16 @@ class Lexer {
     return { type: TokenType.List, value: token, ordered }
   }
   private tokenizeHorizontalRule(): Token {
-    this.eat()
-    return { type: TokenType.HorizontalRule }
+    const value = this.eat()
+    return { type: TokenType.HorizontalRule, value }
   }
   private tokenizeTable(): Token {
     const value = this.eat()
     return { type: TokenType.Table, value }
+  }
+  private tokenizeFootnote(): Token {
+    const value = this.eat()
+    return { type: TokenType.Footnote, value }
   }
 }
 

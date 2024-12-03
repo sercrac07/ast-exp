@@ -18,6 +18,7 @@ export type Node = ProgramNode | ParagraphNode | HeadingNode | CodeBlockNode | B
 export interface ProgramNode {
   type: NodeType.Program
   children: Node[]
+  footnotes: Record<string, Node[]>
 }
 
 export interface ParagraphNode {

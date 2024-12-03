@@ -1,7 +1,7 @@
 import { inline } from '../inline'
 import { InlineNode } from '../inline/types'
 import { lexerize } from '../lexer'
-import { CodeBlockToken, HeadingToken, ListToken, ParagraphToken, Token, TokenType, TokenWithValue } from '../lexer/types'
+import { CodeBlockToken, FootnoteToken, HeadingToken, ListToken, ParagraphToken, Token, TokenType, TokenWithValue } from '../lexer/types'
 import { Node, NodeType, OrderedListNode, ProgramNode, UnorderedListNode } from './types'
 
 class Parser {
@@ -22,7 +22,7 @@ class Parser {
   }
 
   public parse(): ProgramNode {
-    const program: ProgramNode = { type: NodeType.Program, children: [] }
+    const program: ProgramNode = { type: NodeType.Program, children: [], footnotes: {} }
 
     while (this.remaining()) {
       const token = this.current()
@@ -35,7 +35,10 @@ class Parser {
       else if (token.type === TokenType.List) program.children.push(this.parseList())
       else if (token.type === TokenType.HorizontalRule) program.children.push(this.parseHorizontalRule())
       else if (token.type === TokenType.Table) program.children.push(this.parseTable())
-      else this.eat()
+      else if (token.type === TokenType.Footnote) {
+        const footnote = this.parseFootnote()
+        program.footnotes[footnote[0]] = footnote[1]
+      } else this.eat()
     }
 
     return program
@@ -208,6 +211,30 @@ class Parser {
     cells.shift()
     cells.pop()
     return cells.map(cell => inline(cell.trim()))
+  }
+  private parseFootnote(): [string, Node[]] {
+    const token = this.eat() as FootnoteToken
+    const name = token.value.match(/^\s*\[\^(.+)\]/)![1]
+
+    const buffer = [token.value.match(/^\s*\[\^.+\]:(.*)/)![1]]
+
+    while (this.remaining()) {
+      if ('value' in this.current()) {
+        if ((this.current() as TokenWithValue).value.startsWith('  ')) {
+          const token = (this.eat() as TokenWithValue).value.replace(/^\s{2}/, '')
+          buffer.push(token)
+        } else break
+      } else if (this.current().type === TokenType.LineBreak) {
+        this.eat()
+        buffer.push('')
+      } else {
+        break
+      }
+    }
+
+    const footnote: [string, Node[]] = [name, parser(buffer.join('\n')).children]
+
+    return footnote
   }
 }
 
