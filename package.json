@@ -7,8 +7,7 @@
   },
   "scripts": {
     "build": "node ./build.mjs",
-    "test": "vitest",
-    "test:script": "ts-node ./test/script.ts"
+    "test": "cd test && pnpm dev"
   },
   "keywords": [
     "parser",
