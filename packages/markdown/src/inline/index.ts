@@ -230,29 +230,29 @@ class Inline {
   private parseColor(): void {
     this.eat()
     this.eat()
-    let color = ''
+    let value = ''
     while (this.remaining() && this.current() !== ']') {
-      if (this.current() === '\\' && this.chars[1]) color += this.eat()
-      color += this.eat()
+      if (this.current() === '\\' && this.chars[1]) value += this.eat()
+      value += this.eat()
     }
-    if (this.current() !== ']') this.chars.unshift(...`\\#[${color}`)
+    if (this.current() !== ']') this.chars.unshift(...`\\#[${value}`)
     else {
       this.eat()
       if (this.current() === '(') {
         this.eat()
-        let value = ''
+        let color = ''
         while (this.remaining() && this.current() !== ')') {
-          if (this.current() === '\\' && this.chars[1]) value += this.eat()
-          value += this.eat()
+          if (this.current() === '\\' && this.chars[1]) color += this.eat()
+          color += this.eat()
         }
-        if (this.current() !== ')') this.chars.unshift(...`\\#[${color}](${value}`)
+        if (this.current() !== ')') this.chars.unshift(...`\\#[${value}](${color}`)
         else {
           this.flushText()
           this.eat()
           this.nodes.push({ type: InlineNodeType.Color, children: inline(value), color })
         }
       } else {
-        this.chars.unshift(...`\\#[${color}]`)
+        this.chars.unshift(...`\\#[${value}]`)
       }
     }
   }
