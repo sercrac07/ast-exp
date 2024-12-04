@@ -36,6 +36,7 @@ class Inline {
       else if (this.current() === '~') this.parseSubscript()
       else if (this.current() === '#' && this.chars[1] === '[') this.parseColor()
       else if (this.current() === '|') this.parseSpoiler()
+      else if (this.current() === '#') this.parseTag()
       else this.text += this.eat()
     }
 
@@ -272,6 +273,15 @@ class Inline {
       this.eat()
       this.nodes.push({ type: InlineNodeType.Spoiler, children: inline(value), raw: `|${value}|` })
     }
+  }
+  private parseTag(): void {
+    this.eat()
+    let value = ''
+    while (this.remaining() && !/\s/.test(this.current())) {
+      value += this.eat()
+    }
+    this.flushText()
+    this.nodes.push({ type: InlineNodeType.Tag, value, raw: `#${value}` })
   }
 
   private flushText(): void {

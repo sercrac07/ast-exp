@@ -13,6 +13,7 @@ export enum InlineNodeType {
   Subscript = 'SUBSCRIPT',
   Color = 'COLOR',
   Spoiler = 'SPOILER',
+  Tag = 'TAG',
 }
 
 export type InlineNode =
@@ -30,6 +31,7 @@ export type InlineNode =
   | SubscriptNode
   | ColorNode
   | SpoilerNode
+  | TagNode
 
 export interface TextNode {
   type: InlineNodeType.Text
@@ -115,5 +117,11 @@ export interface ColorNode {
 export interface SpoilerNode {
   type: InlineNodeType.Spoiler
   children: InlineNode[]
+  raw: string
+}
+
+export interface TagNode {
+  type: InlineNodeType.Tag
+  value: string
   raw: string
 }
