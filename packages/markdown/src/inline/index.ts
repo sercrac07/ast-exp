@@ -35,6 +35,7 @@ class Inline {
       else if (this.current() === '^') this.parseSuperscript()
       else if (this.current() === '~') this.parseSubscript()
       else if (this.current() === '#' && this.chars[1] === '[') this.parseColor()
+      else if (this.current() === '|') this.parseSpoiler()
       else this.text += this.eat()
     }
 
@@ -254,6 +255,20 @@ class Inline {
       } else {
         this.chars.unshift(...`\\#[${value}]`)
       }
+    }
+  }
+  private parseSpoiler(): void {
+    this.eat()
+    let value = ''
+    while (this.remaining() && this.current() !== '|') {
+      if (this.current() === '\\' && this.chars[1]) value += this.eat()
+      value += this.eat()
+    }
+    if (this.current() !== '|') this.chars.unshift(...`\\|${value}`)
+    else {
+      this.flushText()
+      this.eat()
+      this.nodes.push({ type: InlineNodeType.Spoiler, children: inline(value) })
     }
   }
 
