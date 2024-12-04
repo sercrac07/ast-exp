@@ -6,10 +6,12 @@ import { ListItemNode, Node, NodeType, OrderedListNode, ProgramNode, UnorderedLi
 
 class Parser {
   private tokens: Token[]
+  private source: string
   private children: Node[] = []
   private footnotes: Record<string, Node[]> = {}
 
   constructor(source: string) {
+    this.source = source
     this.tokens = lexerize(source)
   }
 
@@ -24,11 +26,6 @@ class Parser {
   }
 
   public parse(): ProgramNode {
-    const raw = this.tokens
-      .slice(0, -1)
-      .map(token => ('value' in token ? token.value : ''))
-      .join('\n')
-
     while (this.remaining()) {
       const token = this.current()
 
@@ -44,7 +41,7 @@ class Parser {
       else this.eat()
     }
 
-    return { type: NodeType.Program, children: this.children, footnotes: this.footnotes, raw }
+    return { type: NodeType.Program, children: this.children, footnotes: this.footnotes, raw: this.source }
   }
   private parseParagraph(): void {
     const paragraphs: string[] = []
