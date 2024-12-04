@@ -33,17 +33,20 @@ export interface ProgramNode {
   type: NodeType.Program
   children: Node[]
   footnotes: Record<string, Node[]>
+  raw: string
 }
 
 export interface ParagraphNode {
   type: NodeType.Paragraph
   children: InlineNode[]
+  raw: string
 }
 
 export interface HeadingNode {
   type: NodeType.Heading
   level: 1 | 2 | 3 | 4 | 5 | 6
   children: InlineNode[]
+  raw: string
 }
 
 export interface CodeBlockNode {
@@ -51,29 +54,34 @@ export interface CodeBlockNode {
   language?: string
   meta?: string
   value: string
+  raw: string
 }
 
 export interface BlockQuoteNode {
   type: NodeType.BlockQuote
   children: Node[]
   callout: null | string
+  raw: string
 }
 
 export interface OrderedListNode {
   type: NodeType.OrderedList
   children: ListItemNode[]
   start: number
+  raw: string
 }
 
 export interface UnorderedListNode {
   type: NodeType.UnorderedList
   children: ListItemNode[]
+  raw: string
 }
 
 export interface ListItemNode {
   type: NodeType.ListItem
   children: Node[]
   checked: null | string
+  raw: string
 }
 
 export interface HorizontalRuleNode {
@@ -86,6 +94,7 @@ export interface TableNode {
   header: InlineNode[][]
   rows: InlineNode[][][]
   align: ('left' | 'center' | 'right')[]
+  raw: string
 }
 
 export interface LineBreakNode {
@@ -96,4 +105,5 @@ export interface FootnoteNode {
   type: NodeType.Footnote
   name: string
   children: Node[]
+  raw: string
 }

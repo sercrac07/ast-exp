@@ -2,7 +2,7 @@ import { inline } from '../inline'
 import { InlineNode } from '../inline/types'
 import { lexerize } from '../lexer'
 import { CodeBlockToken, FootnoteToken, HeadingToken, HorizontalRuleToken, ListToken, ParagraphToken, Token, TokenType, TokenWithValue } from '../lexer/types'
-import { Node, NodeType, OrderedListNode, ProgramNode, UnorderedListNode } from './types'
+import { ListItemNode, Node, NodeType, OrderedListNode, ProgramNode, UnorderedListNode } from './types'
 
 class Parser {
   private tokens: Token[]
@@ -24,6 +24,11 @@ class Parser {
   }
 
   public parse(): ProgramNode {
+    const raw = this.tokens
+      .slice(0, -1)
+      .map(token => ('value' in token ? token.value : ''))
+      .join('\n')
+
     while (this.remaining()) {
       const token = this.current()
 
@@ -39,7 +44,7 @@ class Parser {
       else this.eat()
     }
 
-    return { type: NodeType.Program, children: this.children, footnotes: this.footnotes }
+    return { type: NodeType.Program, children: this.children, footnotes: this.footnotes, raw }
   }
   private parseParagraph(): void {
     const paragraphs: string[] = []
@@ -48,98 +53,165 @@ class Parser {
       paragraphs.push(token.value)
     }
 
-    this.children.push({ type: NodeType.Paragraph, children: inline(paragraphs.map(p => p.trim()).join('\n')) })
+    this.children.push({ type: NodeType.Paragraph, children: inline(paragraphs.map(p => p.trim()).join('\n')), raw: paragraphs.join('\n') })
   }
   private parseHeading(): void {
     const token = this.eat() as HeadingToken
     const value = token.value.replace(/^\s*#+\s/, '').trim()
 
-    this.children.push({ type: NodeType.Heading, level: token.level, children: inline(value) })
+    this.children.push({ type: NodeType.Heading, level: token.level, children: inline(value), raw: token.value })
   }
   private parseLineBreak(): void {
     this.eat()
     this.children.push({ type: NodeType.LineBreak })
   }
   private parseCodeBlock(): void {
-    const token = this.eat() as CodeBlockToken
-    const language = token.value.match(/^\s*```(\w+)/)?.[1] || undefined
-    const meta = token.value.match(/^\s*```\w+\s+(.*)$/)?.[1] || undefined
+    const openingToken = this.eat() as CodeBlockToken
+    const language = openingToken.value.match(/^\s*```(\w+)/)?.[1] || undefined
+    const meta = openingToken.value.match(/^\s*```\w+\s+(.*)$/)?.[1] || undefined
+
     const content: string[] = []
+    const rawContent: string[] = [openingToken.value]
+
     while (this.remaining() && this.current().type !== TokenType.CodeBlock) {
-      if ('value' in this.current()) content.push((this.eat() as TokenWithValue).value)
-      else {
+      if ('value' in this.current()) {
+        const lineToken = this.eat() as TokenWithValue
+        content.push(lineToken.value)
+        rawContent.push(lineToken.value)
+      } else {
         this.eat()
         content.push('')
+        rawContent.push('')
       }
     }
 
-    this.children.push({ type: NodeType.CodeBlock, language, meta, value: content.join('\n') })
+    if (this.remaining() && this.current().type === TokenType.CodeBlock) {
+      const closingToken = this.eat() as CodeBlockToken
+      rawContent.push(closingToken.value)
+    }
+
+    this.children.push({
+      type: NodeType.CodeBlock,
+      language,
+      meta,
+      value: content.join('\n'),
+      raw: rawContent.join('\n'),
+    })
   }
   private parseBlockQuote(): void {
     const content: string[] = []
+    const rawContent: string[] = []
+
     while (this.remaining() && this.current().type === TokenType.BlockQuote) {
-      if ('value' in this.current()) content.push((this.eat() as TokenWithValue).value.replace(/^\s*>/, ''))
-      else {
+      if ('value' in this.current()) {
+        const token = this.eat() as TokenWithValue
+        content.push(token.value.replace(/^\s*>/, ''))
+        rawContent.push(token.value)
+      } else {
         this.eat()
         content.push('')
+        rawContent.push('')
       }
     }
+
     let callout: null | string = null
     if (/^\s*\[!.*\]\s*/.test(content[0])) {
       callout = content[0].match(/^\s*\[!(.*)\]\s*/)![1]
       content.shift()
     }
 
-    this.children.push({ type: NodeType.BlockQuote, children: parser(content.join('\n')).children, callout })
+    const parsedChildren = parser(content.join('\n')).children
+
+    this.children.push({
+      type: NodeType.BlockQuote,
+      children: parsedChildren,
+      callout,
+      raw: rawContent.join('\n'),
+    })
   }
   private parseList(): void {
     const isOrdered = (this.current() as ListToken).ordered
     let node: OrderedListNode | UnorderedListNode
-    if (isOrdered) node = { type: NodeType.OrderedList, children: [], start: Number((this.current() as ListToken).value.match(/^\s*(\d+)\.\s/)![1]) }
-    else node = { type: NodeType.UnorderedList, children: [] }
+    if (isOrdered) {
+      node = {
+        type: NodeType.OrderedList,
+        children: [],
+        start: Number((this.current() as ListToken).value.match(/^\s*(\d+)\.\s/)![1]),
+        raw: '',
+      }
+    } else {
+      node = { type: NodeType.UnorderedList, children: [], raw: '' }
+    }
 
     const buffer: string[] = []
+    const rawBuffer: string[] = []
 
-    function flush() {
+    const flush = () => {
       if (buffer.length > 0) {
         const checked = buffer[0].match(/^\s*\[(.)\]\s/)?.[1]
         if (checked) buffer[0] = buffer[0].replace(/^\s*\[(.)\]\s/, '')
-        node.children.push({ type: NodeType.ListItem, children: parser(buffer.join('\n')).children, checked: checked ?? null })
+        const itemRaw = rawBuffer.join('\n')
+        const itemNode: ListItemNode = {
+          type: NodeType.ListItem,
+          children: parser(buffer.join('\n')).children,
+          checked: checked ?? null,
+          raw: itemRaw,
+        }
+        node.children.push(itemNode)
+        node.raw += (node.raw ? '\n' : '') + itemRaw
         buffer.length = 0
+        rawBuffer.length = 0
       }
     }
 
     while (this.remaining()) {
       if ('value' in this.current()) {
-        if ((this.current() as ParagraphToken).value.startsWith('  ')) {
-          if (this.current().type === TokenType.List) {
+        const currentToken = this.current() as TokenWithValue
+        if (currentToken.value.startsWith('  ')) {
+          if (currentToken.type === TokenType.List) {
             const newBuffer: string[] = []
+            const newRawBuffer: string[] = []
             while (this.remaining()) {
               if (this.current().type === TokenType.List) {
-                if ((this.current() as ListToken).value.startsWith('  ')) {
-                  newBuffer.push((this.eat() as ListToken).value.replace(/^\s{2}/, ''))
+                const listToken = this.current() as ListToken
+                if (listToken.value.startsWith('  ')) {
+                  newBuffer.push(listToken.value.replace(/^\s{2}/, ''))
+                  newRawBuffer.push(listToken.value)
+                  this.eat()
                 } else if ('value' in this.current()) {
-                  if ((this.current() as ParagraphToken).value.startsWith('    ')) {
-                    newBuffer.push((this.eat() as ParagraphToken).value.replace(/^\s{2}/, ''))
+                  const valueToken = this.current() as TokenWithValue
+                  if (valueToken.value.startsWith('    ')) {
+                    newBuffer.push(valueToken.value.replace(/^\s{2}/, ''))
+                    newRawBuffer.push(valueToken.value)
+                    this.eat()
                   } else break
-                } else newBuffer.push('')
+                } else {
+                  newBuffer.push('')
+                  newRawBuffer.push('')
+                  this.eat()
+                }
               } else break
             }
             buffer.push(newBuffer.join('\n'))
+            rawBuffer.push(newRawBuffer.join('\n'))
           } else {
-            buffer.push((this.eat() as ParagraphToken).value.replace(/^\s{2}/, ''))
+            buffer.push(currentToken.value.replace(/^\s{2}/, ''))
+            rawBuffer.push(currentToken.value)
+            this.eat()
           }
         } else {
-          if (this.current().type === TokenType.List) {
-            if ((this.current() as ListToken).ordered !== isOrdered) break
+          if (currentToken.type === TokenType.List) {
+            if ((currentToken as ListToken).ordered !== isOrdered) break
             flush()
             const token = this.eat() as ListToken
             buffer.push(token.value.replace(/^\s*-\s|\s*\d+\.\s/, ''))
+            rawBuffer.push(token.value)
           } else break
         }
       } else if (this.current().type === TokenType.LineBreak) {
         this.eat()
         buffer.push('')
+        rawBuffer.push('')
       } else break
     }
 
@@ -153,17 +225,20 @@ class Parser {
   }
   private parseTable(): void {
     const tableRows: string[] = []
+    const raw: string[] = []
     while (this.remaining() && this.current().type === TokenType.Table) {
-      tableRows.push((this.eat() as TokenWithValue).value)
+      const token = this.eat() as TokenWithValue
+      tableRows.push(token.value)
+      raw.push(token.value)
     }
 
     if (tableRows.length < 2) {
-      this.children.push(this.parseTableAsParagraph(tableRows))
+      this.children.push(this.parseTableAsParagraph(tableRows, raw.join('\n')))
       return
     }
 
     if (!this.isValidAlignmentRow(tableRows[1])) {
-      this.children.push(this.parseTableAsParagraph(tableRows))
+      this.children.push(this.parseTableAsParagraph(tableRows, raw.join('\n')))
       return
     }
 
@@ -187,11 +262,21 @@ class Parser {
         return row
       })
 
-    this.children.push({ type: NodeType.Table, align, header, rows })
+    this.children.push({
+      type: NodeType.Table,
+      align,
+      header,
+      rows,
+      raw: raw.join('\n'), // Add the raw property
+    })
   }
-  private parseTableAsParagraph(tableRows: string[]): Node {
+  private parseTableAsParagraph(tableRows: string[], rawContent: string): Node {
     const content = tableRows.join('\n')
-    return { type: NodeType.Paragraph, children: inline(content.trim()) }
+    return {
+      type: NodeType.Paragraph,
+      children: inline(content.trim()),
+      raw: rawContent, // Add the raw property
+    }
   }
   private isValidAlignmentRow(row: string): boolean {
     return /^\s*\|(\s*(:-+:|:-{2,}|-{2,}:|-{3,})\s*\|)+\s*$/.test(row)
@@ -217,25 +302,39 @@ class Parser {
     const token = this.eat() as FootnoteToken
     const name = token.value.match(/^\s*\[\^(.+)\]/)![1]
 
-    const buffer = [token.value.match(/^\s*\[\^.+\]:(.*)/)![1]]
+    const buffer: string[] = [token.value.match(/^\s*\[\^.+\]:(.*)/)![1]]
+    const rawBuffer: string[] = [token.value]
 
     while (this.remaining()) {
       if ('value' in this.current()) {
-        if ((this.current() as TokenWithValue).value.startsWith('  ')) {
-          const token = (this.eat() as TokenWithValue).value.replace(/^\s{2}/, '')
-          buffer.push(token)
-        } else break
+        const currentToken = this.current() as TokenWithValue
+        if (currentToken.value.startsWith('  ')) {
+          const content = currentToken.value.replace(/^\s{2}/, '')
+          buffer.push(content)
+          rawBuffer.push(currentToken.value)
+          this.eat()
+        } else {
+          break
+        }
       } else if (this.current().type === TokenType.LineBreak) {
         this.eat()
         buffer.push('')
+        rawBuffer.push('')
       } else {
         break
       }
     }
 
+    const raw = rawBuffer.join('\n')
     const children = parser(buffer.join('\n')).children
+
     this.footnotes[name] = children
-    this.children.push({ type: NodeType.Footnote, name, children: children })
+    this.children.push({
+      type: NodeType.Footnote,
+      name,
+      children: children,
+      raw: raw,
+    })
   }
 }
 
