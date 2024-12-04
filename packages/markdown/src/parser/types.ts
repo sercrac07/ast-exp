@@ -12,9 +12,22 @@ export enum NodeType {
   HorizontalRule = 'HORIZONTAL_RULE',
   Table = 'TABLE',
   LineBreak = 'LINE_BREAK',
+  Footnote = 'FOOTNOTE',
 }
 
-export type Node = ProgramNode | ParagraphNode | HeadingNode | CodeBlockNode | BlockQuoteNode | OrderedListNode | UnorderedListNode | ListItemNode | HorizontalRuleNode | TableNode | LineBreakNode
+export type Node =
+  | ProgramNode
+  | ParagraphNode
+  | HeadingNode
+  | CodeBlockNode
+  | BlockQuoteNode
+  | OrderedListNode
+  | UnorderedListNode
+  | ListItemNode
+  | HorizontalRuleNode
+  | TableNode
+  | LineBreakNode
+  | FootnoteNode
 
 export interface ProgramNode {
   type: NodeType.Program
@@ -65,6 +78,7 @@ export interface ListItemNode {
 
 export interface HorizontalRuleNode {
   type: NodeType.HorizontalRule
+  value: string
 }
 
 export interface TableNode {
@@ -76,4 +90,10 @@ export interface TableNode {
 
 export interface LineBreakNode {
   type: NodeType.LineBreak
+}
+
+export interface FootnoteNode {
+  type: NodeType.Footnote
+  name: string
+  children: Node[]
 }

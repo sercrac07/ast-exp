@@ -1,11 +1,13 @@
 import { inline } from '../inline'
 import { InlineNode } from '../inline/types'
 import { lexerize } from '../lexer'
-import { CodeBlockToken, FootnoteToken, HeadingToken, ListToken, ParagraphToken, Token, TokenType, TokenWithValue } from '../lexer/types'
+import { CodeBlockToken, FootnoteToken, HeadingToken, HorizontalRuleToken, ListToken, ParagraphToken, Token, TokenType, TokenWithValue } from '../lexer/types'
 import { Node, NodeType, OrderedListNode, ProgramNode, UnorderedListNode } from './types'
 
 class Parser {
   private tokens: Token[]
+  private children: Node[] = []
+  private footnotes: Record<string, Node[]> = {}
 
   constructor(source: string) {
     this.tokens = lexerize(source)
@@ -22,47 +24,43 @@ class Parser {
   }
 
   public parse(): ProgramNode {
-    const program: ProgramNode = { type: NodeType.Program, children: [], footnotes: {} }
-
     while (this.remaining()) {
       const token = this.current()
 
-      if (token.type === TokenType.Paragraph) program.children.push(this.parseParagraph())
-      else if (token.type === TokenType.LineBreak) program.children.push(this.parseLineBreak())
-      else if (token.type === TokenType.Heading) program.children.push(this.parseHeading())
-      else if (token.type === TokenType.CodeBlock) program.children.push(this.parseCodeBlock())
-      else if (token.type === TokenType.BlockQuote) program.children.push(this.parseBlockQuote())
-      else if (token.type === TokenType.List) program.children.push(this.parseList())
-      else if (token.type === TokenType.HorizontalRule) program.children.push(this.parseHorizontalRule())
-      else if (token.type === TokenType.Table) program.children.push(this.parseTable())
-      else if (token.type === TokenType.Footnote) {
-        const footnote = this.parseFootnote()
-        program.footnotes[footnote[0]] = footnote[1]
-      } else this.eat()
+      if (token.type === TokenType.Paragraph) this.parseParagraph()
+      else if (token.type === TokenType.LineBreak) this.parseLineBreak()
+      else if (token.type === TokenType.Heading) this.parseHeading()
+      else if (token.type === TokenType.CodeBlock) this.parseCodeBlock()
+      else if (token.type === TokenType.BlockQuote) this.parseBlockQuote()
+      else if (token.type === TokenType.List) this.parseList()
+      else if (token.type === TokenType.HorizontalRule) this.parseHorizontalRule()
+      else if (token.type === TokenType.Table) this.parseTable()
+      else if (token.type === TokenType.Footnote) this.parseFootnote()
+      else this.eat()
     }
 
-    return program
+    return { type: NodeType.Program, children: this.children, footnotes: this.footnotes }
   }
-  private parseParagraph(): Node {
+  private parseParagraph(): void {
     const paragraphs: string[] = []
     while (this.remaining() && this.current().type === TokenType.Paragraph) {
       const token = this.eat() as ParagraphToken
       paragraphs.push(token.value)
     }
 
-    return { type: NodeType.Paragraph, children: inline(paragraphs.map(p => p.trim()).join('\n')) }
+    this.children.push({ type: NodeType.Paragraph, children: inline(paragraphs.map(p => p.trim()).join('\n')) })
   }
-  private parseHeading(): Node {
+  private parseHeading(): void {
     const token = this.eat() as HeadingToken
     const value = token.value.replace(/^\s*#+\s/, '').trim()
 
-    return { type: NodeType.Heading, level: token.level, children: inline(value) }
+    this.children.push({ type: NodeType.Heading, level: token.level, children: inline(value) })
   }
-  private parseLineBreak(): Node {
+  private parseLineBreak(): void {
     this.eat()
-    return { type: NodeType.LineBreak }
+    this.children.push({ type: NodeType.LineBreak })
   }
-  private parseCodeBlock(): Node {
+  private parseCodeBlock(): void {
     const token = this.eat() as CodeBlockToken
     const language = token.value.match(/^\s*```(\w+)/)?.[1] || undefined
     const meta = token.value.match(/^\s*```\w+\s+(.*)$/)?.[1] || undefined
@@ -74,10 +72,10 @@ class Parser {
         content.push('')
       }
     }
-    if (this.current().type === TokenType.CodeBlock) this.eat()
-    return { type: NodeType.CodeBlock, language, meta, value: content.join('\n') }
+
+    this.children.push({ type: NodeType.CodeBlock, language, meta, value: content.join('\n') })
   }
-  private parseBlockQuote(): Node {
+  private parseBlockQuote(): void {
     const content: string[] = []
     while (this.remaining() && this.current().type === TokenType.BlockQuote) {
       if ('value' in this.current()) content.push((this.eat() as TokenWithValue).value.replace(/^\s*>/, ''))
@@ -92,9 +90,9 @@ class Parser {
       content.shift()
     }
 
-    return { type: NodeType.BlockQuote, children: parser(content.join('\n')).children, callout }
+    this.children.push({ type: NodeType.BlockQuote, children: parser(content.join('\n')).children, callout })
   }
-  private parseList(): Node {
+  private parseList(): void {
     const isOrdered = (this.current() as ListToken).ordered
     let node: OrderedListNode | UnorderedListNode
     if (isOrdered) node = { type: NodeType.OrderedList, children: [], start: Number((this.current() as ListToken).value.match(/^\s*(\d+)\.\s/)![1]) }
@@ -147,24 +145,26 @@ class Parser {
 
     flush()
 
-    return node
+    this.children.push(node)
   }
-  private parseHorizontalRule(): Node {
-    this.eat()
-    return { type: NodeType.HorizontalRule }
+  private parseHorizontalRule(): void {
+    const token = this.eat() as HorizontalRuleToken
+    this.children.push({ type: NodeType.HorizontalRule, value: token.value })
   }
-  private parseTable(): Node {
+  private parseTable(): void {
     const tableRows: string[] = []
     while (this.remaining() && this.current().type === TokenType.Table) {
       tableRows.push((this.eat() as TokenWithValue).value)
     }
 
     if (tableRows.length < 2) {
-      return this.parseTableAsParagraph(tableRows)
+      this.children.push(this.parseTableAsParagraph(tableRows))
+      return
     }
 
     if (!this.isValidAlignmentRow(tableRows[1])) {
-      return this.parseTableAsParagraph(tableRows)
+      this.children.push(this.parseTableAsParagraph(tableRows))
+      return
     }
 
     const header = this.parseTableRow(tableRows[0])
@@ -187,7 +187,7 @@ class Parser {
         return row
       })
 
-    return { type: NodeType.Table, align, header, rows }
+    this.children.push({ type: NodeType.Table, align, header, rows })
   }
   private parseTableAsParagraph(tableRows: string[]): Node {
     const content = tableRows.join('\n')
@@ -213,7 +213,7 @@ class Parser {
     cells.pop()
     return cells.map(cell => inline(cell.trim()))
   }
-  private parseFootnote(): [string, Node[]] {
+  private parseFootnote(): void {
     const token = this.eat() as FootnoteToken
     const name = token.value.match(/^\s*\[\^(.+)\]/)![1]
 
@@ -233,9 +233,9 @@ class Parser {
       }
     }
 
-    const footnote: [string, Node[]] = [name, parser(buffer.join('\n')).children]
-
-    return footnote
+    const children = parser(buffer.join('\n')).children
+    this.footnotes[name] = children
+    this.children.push({ type: NodeType.Footnote, name, children: children })
   }
 }
 
