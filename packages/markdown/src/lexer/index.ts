@@ -83,6 +83,11 @@ class Lexer {
   }
 }
 
+/**
+ * Generate a list of tokens from the given Markdown source.
+ *
+ * [API Reference](https://github.com/sercrac07/ast-exp/tree/master/packages/markdown#lexersource)
+ */
 export function lexerize(source: string): Token[] {
   return new Lexer(source).tokenize()
 }

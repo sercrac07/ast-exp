@@ -292,6 +292,11 @@ class Inline {
   }
 }
 
+/**
+ * Generate an AST from the given inline Markdown source.
+ *
+ * [API Reference](https://github.com/sercrac07/ast-exp/tree/master/packages/markdown#inlinesource)
+ */
 export function inline(line: string): InlineNode[] {
   return new Inline(line).parse()
 }

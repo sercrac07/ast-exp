@@ -11,7 +11,7 @@ class Parser {
   private footnotes: Record<string, Node[]> = {}
 
   constructor(source: string) {
-    this.source = source
+    this.source = source.split(/\r?\n/).join('\n')
     this.tokens = lexerize(source)
   }
 
@@ -335,6 +335,11 @@ class Parser {
   }
 }
 
+/**
+ * Generate an AST from the given Markdown source.
+ *
+ * [API Reference](https://github.com/sercrac07/ast-exp/tree/master/packages/markdown#parsersource)
+ */
 export function parser(source: string): ProgramNode {
   return new Parser(source).parse()
 }
