@@ -48,8 +48,10 @@ class Inline {
     this.flushText()
     this.eat()
     if (this.remaining()) {
-      if (this.ESCAPES.includes(this.current())) this.nodes.push({ type: InlineNodeType.Escape, value: this.eat() })
-      else this.text += '\\'
+      if (this.ESCAPES.includes(this.current())) {
+        const value = this.eat()
+        this.nodes.push({ type: InlineNodeType.Escape, value, raw: `\\${value}` })
+      } else this.text += '\\'
     } else this.text += '\\'
   }
   private parseCode(): void {
@@ -63,7 +65,7 @@ class Inline {
     else {
       this.flushText()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Code, value })
+      this.nodes.push({ type: InlineNodeType.Code, value, raw: `\`${value}\`` })
     }
   }
   private parseStrong(): void {
@@ -79,7 +81,7 @@ class Inline {
       this.flushText()
       this.eat()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Strong, children: inline(value) })
+      this.nodes.push({ type: InlineNodeType.Strong, children: inline(value), raw: `**${value}**` })
     }
   }
   private parseItalic(): void {
@@ -93,7 +95,7 @@ class Inline {
     else {
       this.flushText()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Italic, children: inline(value) })
+      this.nodes.push({ type: InlineNodeType.Italic, children: inline(value), raw: `_${value}_` })
     }
   }
   private parseFootnote(): void {
@@ -108,7 +110,7 @@ class Inline {
     else {
       this.flushText()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.FootnoteReference, value })
+      this.nodes.push({ type: InlineNodeType.FootnoteReference, value, raw: `[^${value}]` })
     }
   }
   private parseLink(): void {
@@ -132,7 +134,7 @@ class Inline {
         else {
           this.flushText()
           this.eat()
-          this.nodes.push({ type: InlineNodeType.Link, url, children: inline(value) })
+          this.nodes.push({ type: InlineNodeType.Link, url, children: inline(value), raw: `[${value}](${url})` })
         }
       } else {
         this.chars.unshift(...`\\[${value}]`)
@@ -161,7 +163,7 @@ class Inline {
         else {
           this.flushText()
           this.eat()
-          this.nodes.push({ type: InlineNodeType.Image, url, alt: value })
+          this.nodes.push({ type: InlineNodeType.Image, url, alt: value, raw: `![${value}](${url})` })
         }
       } else {
         this.chars.unshift(...`\\![${value}]`)
@@ -181,7 +183,7 @@ class Inline {
       this.flushText()
       this.eat()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Delete, children: inline(value) })
+      this.nodes.push({ type: InlineNodeType.Delete, children: inline(value), raw: `~~${value}~~` })
     }
   }
   private parseHighlight(): void {
@@ -197,7 +199,7 @@ class Inline {
       this.flushText()
       this.eat()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Highlight, children: inline(value) })
+      this.nodes.push({ type: InlineNodeType.Highlight, children: inline(value), raw: `==${value}==` })
     }
   }
   private parseSuperscript(): void {
@@ -211,7 +213,7 @@ class Inline {
     else {
       this.flushText()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Superscript, children: inline(value) })
+      this.nodes.push({ type: InlineNodeType.Superscript, children: inline(value), raw: `^${value}^` })
     }
   }
   private parseSubscript(): void {
@@ -225,7 +227,7 @@ class Inline {
     else {
       this.flushText()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Subscript, children: inline(value) })
+      this.nodes.push({ type: InlineNodeType.Subscript, children: inline(value), raw: `~${value}~` })
     }
   }
   private parseColor(): void {
@@ -250,7 +252,7 @@ class Inline {
         else {
           this.flushText()
           this.eat()
-          this.nodes.push({ type: InlineNodeType.Color, children: inline(value), color })
+          this.nodes.push({ type: InlineNodeType.Color, children: inline(value), color, raw: `#[${value}](${color})` })
         }
       } else {
         this.chars.unshift(...`\\#[${value}]`)
@@ -268,13 +270,13 @@ class Inline {
     else {
       this.flushText()
       this.eat()
-      this.nodes.push({ type: InlineNodeType.Spoiler, children: inline(value) })
+      this.nodes.push({ type: InlineNodeType.Spoiler, children: inline(value), raw: `|${value}|` })
     }
   }
 
   private flushText(): void {
     if (this.text.length > 0) {
-      this.nodes.push({ type: InlineNodeType.Text, value: this.text.replace(/ +/g, ' ') })
+      this.nodes.push({ type: InlineNodeType.Text, value: this.text.replace(/ +/g, ' '), raw: this.text })
       this.text = ''
     }
   }
